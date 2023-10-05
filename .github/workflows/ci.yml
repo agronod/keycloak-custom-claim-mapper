@@ -48,7 +48,7 @@ jobs:
       - uses: actions/download-artifact@v2
       - run: mkdir jars
                 
-      - run: mv /home/runner/work/keycloak-custom-claim-mapper/keycloak-custom-claim-mapper/target/keycloak-custom-claim-mapper-jar-with-dependencies.jar jars/keycloak-custom-claim-mapper-jar-with-dependencies.jar
+      - run: mv /home/runner/work/keycloak-custom-claim-mapper/keycloak-custom-claim-mapper/keycloak-custom-claim-mapper-jar-with-dependencies/keycloak-custom-claim-mapper-jar-with-dependencies.jar jars/keycloak-custom-claim-mapper-jar-with-dependencies.jar
       - uses: mathieudutour/github-tag-action@v6.0
         id: tag_version
         with:
