@@ -38,8 +38,8 @@ jobs:
         run: mvn -Pdev -B package --file pom.xml
       - uses: actions/upload-artifact@v2
         with:
-          name: keyckloak-custom-claim-mapper-jar-with-dependencies
-          path: target/keyckloak-custom-claim-mapper-jar-with-dependencies.jar
+          name: keycloak-custom-claim-mapper-jar-with-dependencies
+          path: target/keycloak-custom-claim-mapper-jar-with-dependencies.jar
 
   create_github_release:
     runs-on: ubuntu-latest
@@ -47,7 +47,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v2
       - run: mkdir jars
-      - run: mv /home/runner/work/keycloak-custom-claim-mapper/keycloak-custom-claim-mapper/keyckloak-custom-claim-mapper-jar-with-dependencies/keyckloak-custom-claim-mapper-jar-with-dependencies.jar jars/keyckloak-custom-claim-mapper-jar-with-dependencies.jar
+                
+      - run: mv /home/runner/work/keycloak-custom-claim-mapper/keycloak-custom-claim-mapper/target/keycloak-custom-claim-mapper-jar-with-dependencies.jar jars/keycloak-custom-claim-mapper-jar-with-dependencies.jar
       - uses: mathieudutour/github-tag-action@v6.0
         id: tag_version
         with:
@@ -60,6 +61,6 @@ jobs:
           name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
           files: |
-            jars/keyckloak-custom-claim-mapper-jar-with-dependencies.jar
+            jars/keycloak-custom-claim-mapper-jar-with-dependencies.jar
         env:
           github_token: ${{ secrets.GITHUB_TOKEN }}

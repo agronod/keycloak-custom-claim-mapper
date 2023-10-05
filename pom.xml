@@ -79,7 +79,7 @@
     </dependencies>
 
     <build>
-        <finalName>keyckloak-custom-claim-mapper</finalName>
+        <finalName>keycloak-custom-claim-mapper</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources-${env}</directory>
