@@ -32,4 +32,7 @@ Once your container is up and running:
 - The mapper should be in Scopes.
 
 
+To run shell in keycloak container.
+```
 docker exec -it keycloak-testing-container sh
+```
