@@ -1,5 +1,6 @@
 package com.agronod.keycloak;
 
+import org.jboss.logging.Logger;
 import org.keycloak.models.ClientSessionContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ProtocolMapperModel;
@@ -21,7 +22,8 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
 
     public static final String PROVIDER_ID = "oidc-customprotocolmapper";
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
-
+    private static Logger logger = Logger.getLogger(CustomOIDCProtocolMapper.class);
+    
     /**
      * Maybe you want to have config fields for your Mapper
      */
@@ -72,6 +74,12 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
     public AccessToken transformAccessToken(AccessToken token, ProtocolMapperModel mappingModel,
             KeycloakSession keycloakSession,
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
+
+String subject = token.getSubject();
+String id = token.getId();
+System.console().writer().println("________ id: " + id + " subject: " + subject);
+logger.info("________ id: " + id + " subject: " + subject);
+
 
         token.getOtherClaims().put("agronod_roles",
                 "8313d61d-7c93-46e4-931a-191c51fff8da_394797-ff434-3453-345_firmatecknare, 8313d61d-7c93-46e4-931a-191c51fff8da_394797-ff434-3453-345_radgivare");
