@@ -1,5 +1,9 @@
 package com.agronod.keycloak;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jboss.logging.Logger;
 import org.keycloak.models.ClientSessionContext;
 import org.keycloak.models.KeycloakSession;
@@ -11,11 +15,15 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.AccessToken;
 
 import com.agronod.keycloak.config.ConfigLoader;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
         implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper {
@@ -23,7 +31,7 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
     public static final String PROVIDER_ID = "oidc-customprotocolmapper";
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
     private static Logger logger = Logger.getLogger(CustomOIDCProtocolMapper.class);
-    
+
     /**
      * Maybe you want to have config fields for your Mapper
      */
@@ -74,16 +82,41 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
     public AccessToken transformAccessToken(AccessToken token, ProtocolMapperModel mappingModel,
             KeycloakSession keycloakSession,
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
+        try {
+            String userId = token.getSubject();
+            Boolean isEmailVerified = token.getEmailVerified();
 
-String subject = token.getSubject();
-String id = token.getId();
-System.console().writer().println("________ id: " + id + " subject: " + subject);
-logger.info("________ id: " + id + " subject: " + subject);
+            // TODO: Call profile API
+            String profileApiUrl = ConfigLoader.getInstance().getProperty("API.URL");
 
+            logger.info("____ Try API: " + profileApiUrl + "/rule/getApprovedAffarspartners");
 
-        token.getOtherClaims().put("agronod_roles",
-                "8313d61d-7c93-46e4-931a-191c51fff8da_394797-ff434-3453-345_firmatecknare, 8313d61d-7c93-46e4-931a-191c51fff8da_394797-ff434-3453-345_radgivare");
-        setClaim(token, mappingModel, userSession, keycloakSession, clientSessionCtx);
+            String returnedContent = getAgronodAnvandereInfo(userId);
+
+            logger.info("____ Returned: " + returnedContent);
+
+            //
+            logger.info("Fetched user info from API");
+            List<AgroIdClaim> agroIdn = new ArrayList<AgroIdClaim>();
+            AgroIdClaim claimOne = new AgroIdClaim("agroid1", new String[] { "aff1", "aff3" });
+            agroIdn.add(claimOne);
+
+            String json = "";
+            ObjectMapper mapper = new ObjectMapper();
+
+            json = mapper.writeValueAsString(agroIdn);
+
+            token.getOtherClaims().put("agronodIdn", json);
+            token.getOtherClaims().put("roller", "agro-admin");
+
+            setClaim(token, mappingModel, userSession, keycloakSession, clientSessionCtx);
+            logger.info("Set updated claims for user");
+        } catch (JsonProcessingException e) {
+            logger.error("transformAccessToken - failed to serialize to json", e, null, e);
+        } catch (Exception e) {
+            logger.error("transformAccessToken - failed", e, null, e);
+        }
+
         return token;
     }
 
@@ -99,5 +132,42 @@ logger.info("________ id: " + id + " subject: " + subject);
         config.put(OIDCAttributeMapperHelper.INCLUDE_IN_ID_TOKEN, "true");
         mapper.setConfig(config);
         return mapper;
+    }
+
+    private String getAgronodAnvandereInfo(String userId) {
+        try {
+            String profileApiUrl = ConfigLoader.getInstance().getProperty("API.URL");
+
+            CloseableHttpClient client = HttpClients.createDefault();
+            HttpGet httpGet = new HttpGet(profileApiUrl + "/rule/getApprovedAffarspartners");
+
+            // String json = getJsonstring(email, code);
+            // org.apache.http.entity.StringEntity entity = new
+            // org.apache.http.entity.StringEntity(json,
+            // ContentType.APPLICATION_JSON);
+            // httpGet.setEntity(entity);
+            httpGet.setHeader("Accept", "application/json");
+            httpGet.setHeader("Content-type", "application/json");
+
+            CloseableHttpResponse response = client.execute(httpGet);
+            client.close();
+            if (response.getStatusLine().getStatusCode() > 299) {
+                System.out.println(response.getStatusLine().getReasonPhrase());
+                return null;
+            }
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+            String inputLine;
+            StringBuffer content = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+
+            return content.toString();
+
+        } catch (Exception e) {
+            logger.error("Exception when calling Profile-api", e, null, e);
+            return null;
+        }
     }
 }

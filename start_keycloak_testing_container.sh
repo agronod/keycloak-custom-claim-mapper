@@ -2,7 +2,10 @@
 
 docker rm keycloak-testing-container || true
 
+# --net=host \ is so that we can call localhost from SPI and reach localhost on computer.
+
 docker run \
+   --net=host \
    -p 8080:8080 \
    --name keycloak-testing-container \
    -e KEYCLOAK_ADMIN=admin \
