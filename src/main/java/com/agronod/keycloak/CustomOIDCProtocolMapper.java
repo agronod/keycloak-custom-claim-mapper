@@ -1,9 +1,5 @@
 package com.agronod.keycloak;
 
-// import org.apache.http.client.methods.CloseableHttpResponse;
-// import org.apache.http.client.methods.HttpGet;
-// import org.apache.http.impl.client.CloseableHttpClient;
-// import org.apache.http.impl.client.HttpClients;
 import org.jboss.logging.Logger;
 import org.keycloak.models.ClientSessionContext;
 import org.keycloak.models.KeycloakSession;
@@ -14,7 +10,6 @@ import org.keycloak.protocol.oidc.mappers.*;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.AccessToken;
 
-// import com.agronod.keycloak.config.ConfigLoader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,13 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.sql.Array;
-// import java.io.BufferedReader;
-// import java.io.InputStreamReader;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 
 public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
         implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper {
@@ -36,6 +25,7 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
     public static final String PROVIDER_ID = "oidc-customprotocolmapper";
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
     private static Logger logger = Logger.getLogger(CustomOIDCProtocolMapper.class);
+    private DatabaseAccess databaseAccess;
 
     // To configure this in Terraform.
     // https://registry.terraform.io/providers/mrparkers/keycloak/latest/docs/resources/generic_protocol_mapper
@@ -47,6 +37,10 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
         property.setHelpText("Connectionstring to database");
         property.setType(ProviderConfigProperty.STRING_TYPE);
         configProperties.add(property);
+    }
+
+    public CustomOIDCProtocolMapper() {
+        this.databaseAccess = new DatabaseAccess();
     }
 
     @Override
@@ -74,7 +68,6 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
         return "Adds claims from Agronods User/claims API";
     }
 
-    // jdbc:postgresql://localhost:5432/datadelning?currentSchema=public&user=newuser&password=password
     public AccessToken transformAccessToken(AccessToken token, ProtocolMapperModel mappingModel,
             KeycloakSession keycloakSession,
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
@@ -83,66 +76,38 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             Boolean isEmailVerified = token.getEmailVerified();
             String currentScope = token.getScope();
 
-            final String connectionString = mappingModel.getConfig().get("connectionstring");
+            Connection conn = this.databaseAccess
+                    .createDatabaseConnection(mappingModel.getConfig().get("connectionstring"));
 
-            Class.forName("org.postgresql.Driver");
-            Connection conn = DriverManager.getConnection(connectionString);
-            PreparedStatement st = conn.prepareStatement(
-                    "select at2.id, at2.namn, ata.affarspartner_id, aar.anvandar_id, array_agg( aar.roll) from anvandare a "
-                            +
-                            "inner join agro_tenant at2 on a.agro_tenant_id  = at2.id  " +
-                            "left outer join agro_tenant_affarspartner ata on at2.id = ata.agro_tenant_id  " +
-                            "left outer join anvandare_affarspartner_roller aar on aar.anvandar_id = a.id and aar.affarspartner_id = ata.affarspartner_id "
-                            +
-                            "where externt_id = ? " +
-                            "group by at2.id, at2.namn, ata.affarspartner_id, aar.anvandar_id ");
-            st.setString(1, userId);
-            ResultSet rs = st.executeQuery();
+            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(userId, conn);
 
-            List<AgronodKonton> konton = new ArrayList<AgronodKonton>();
+            logger.info("Fetched own affarspartners");
 
-            List<Affarspartners> affarspartners = new ArrayList<Affarspartners>();
-
-            AgronodKonton konto = null;
-            while (rs.next()) {
-                konto = new AgronodKonton(rs.getString(1), rs.getString(2));
-                Array test = rs.getArray(5);
-                String[] roles = (String[]) test.getArray(); // TODO: so complicated...
-                Affarspartners ap = new Affarspartners(rs.getString(3), roles);
-                affarspartners.add(ap);
-                logger.info("____ database returns: " + rs.getString(1));
-            }
-            konton.add(konto);
-            konto.Affarspartners = affarspartners;
-
-            rs.close();
-            st.close();
+            UserInfo userInfo = this.databaseAccess.fetchUserInfo(userId, conn);
+            logger.info("Fetched user Info");
 
             // Admin roles
-            String adminRoles = "select ata.agro_tenant_id as agroTenantId, at2.namn as agroTenantName, aar.affarspartner_id as affarspartnerId, aar.anvandar_id as anvandarId , array_agg(aar.roll) as roller	" +
-            "from anvandare a " +
-            "inner join anvandare_affarspartner_roller aar on aar.anvandar_id = a.id " +
-            "left outer join agro_tenant_affarspartner ata on ata.affarspartner_id = aar.affarspartner_id " +
-            "left outer join agro_tenant at2 on at2.id = ata.agro_tenant_id " +
-            "where a.externt_id = ? and a.agro_tenant_id != ata.agro_tenant_id and aar.roll = 'admin' " +
-            "group by ata.agro_tenant_id , at2.namn , aar.affarspartner_id, aar.anvandar_id 	" +
-            "order by ata.agro_tenant_id, aar.affarspartner_id;";
+            konton = this.databaseAccess.fetchAdminRoles(userId, conn, konton);
 
-
-            logger.info("Fetched user info from Database");
+            logger.info("Fetched admin roles from other");
 
             String jsonKonton = "";
             ObjectMapper mapper = new ObjectMapper();
 
             jsonKonton = mapper.writeValueAsString(konton);
-
-            logger.info("____ konton: " + jsonKonton);
-
             token.getOtherClaims().put("argonodKonton", jsonKonton);
-            // token.getOtherClaims().put("roller", "agro-admin");
-            // if (currentScope.contains("ssn")) {
-            // token.getOtherClaims().put("ssn", "28472748");
-            // }
+
+            if (userInfo.email != null && userInfo.email.length() > 0) {
+                token.getOtherClaims().put("email", userInfo.email);
+            }
+
+            if (userInfo.name != null && userInfo.name.length() > 0) {
+                token.getOtherClaims().put("name", userInfo.name);
+            }
+
+            if (currentScope.contains("ssn") && userInfo.ssn != null && userInfo.ssn.length() > 0) {
+                token.getOtherClaims().put("ssn", userInfo.ssn);
+            }
 
             setClaim(token, mappingModel, userSession, keycloakSession, clientSessionCtx);
             logger.info("Set updated claims for user");
