@@ -95,7 +95,7 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             ObjectMapper mapper = new ObjectMapper();
 
             jsonKonton = mapper.writeValueAsString(konton);
-            token.getOtherClaims().put("argonodKonton", jsonKonton);
+            token.getOtherClaims().put("agronodKonton", jsonKonton);
 
             if (userInfo.email != null && userInfo.email.length() > 0) {
                 token.getOtherClaims().put("email", userInfo.email);
