@@ -15,7 +15,8 @@ import org.jboss.logging.Logger;
 
 public class DatabaseAccess {
 
-    final String adminRolesQuery = "select ata.agro_tenant_id, at2.namn, aar.affarspartner_id, array_agg(aar.roll) " +
+    final String adminRolesQuery = "select ata.agro_tenant_id, at2.namn, aar.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') "
+            +
             "from anvandare a " +
             "inner join anvandare_affarspartner_roller aar on aar.anvandar_id = a.id " +
             "left outer join agro_tenant_affarspartner ata on ata.affarspartner_id = aar.affarspartner_id " +
@@ -61,13 +62,18 @@ public class DatabaseAccess {
                     if (existingAffPartner != null) {
                         // Affarspartner finns
                     } else {
+                        if (existingKonto.Affarspartners == null) {
+                            existingKonto.Affarspartners = new ArrayList<Affarspartners>();
+                        }
                         existingKonto.Affarspartners.add(ap);
                     }
                 } else {
                     konto = new AgronodKonton(agroTenantId, agroTenantName);
-                    Affarspartners ap = new Affarspartners(affarspartnerId, roles);
-                    konto.Affarspartners = new ArrayList<Affarspartners>();
-                    konto.Affarspartners.add(ap);
+                    if (affarspartnerId != null) {
+                        Affarspartners ap = new Affarspartners(affarspartnerId, roles);
+                        konto.Affarspartners = new ArrayList<Affarspartners>();
+                        konto.Affarspartners.add(ap);
+                    }
                     konton.add(konto);
                 }
             }
@@ -88,7 +94,7 @@ public class DatabaseAccess {
 
         try {
             PreparedStatement st = conn.prepareStatement(
-                    "select at2.id, at2.namn, ata.affarspartner_id, array_agg( aar.roll) from anvandare a "
+                    "select at2.id, at2.namn, ata.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') from anvandare a "
                             +
                             "inner join agro_tenant at2 on a.agro_tenant_id  = at2.id  " +
                             "left outer join agro_tenant_affarspartner ata on at2.id = ata.agro_tenant_id  " +
@@ -100,16 +106,24 @@ public class DatabaseAccess {
             ResultSet rs = st.executeQuery();
 
             konto = null;
+
             while (rs.next()) {
                 // TODO: This assumes that a user only can have ONE agronodKonto (AgroTenant)
                 konto = new AgronodKonton(rs.getString(1), rs.getString(2));
                 Array test = rs.getArray(4);
                 List<String> roles = Arrays.asList((String[]) test.getArray());
-                Affarspartners ap = new Affarspartners(rs.getString(3), roles);
-                affarspartners.add(ap);
+                String affarspartnerId = rs.getString(3);
+                if (affarspartnerId != null) {
+                    Affarspartners ap = new Affarspartners(rs.getString(3), roles);
+                    affarspartners.add(ap);
+                }
             }
-            konton.add(konto);
-            konto.Affarspartners = affarspartners;
+            if (konto != null) {
+                konton.add(konto);
+                if (affarspartners.size() > 0) {
+                    konto.Affarspartners = affarspartners;
+                }
+            }
 
             rs.close();
             st.close();

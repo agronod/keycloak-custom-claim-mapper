@@ -10,6 +10,7 @@ import org.keycloak.protocol.oidc.mappers.*;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.AccessToken;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -93,6 +94,7 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
 
             String jsonKonton = "";
             ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(Include.NON_NULL);
 
             jsonKonton = mapper.writeValueAsString(konton);
             token.getOtherClaims().put("agronodKonton", jsonKonton);

@@ -1,6 +1,4 @@
 
-import static org.junit.Assert.assertEquals;
-
 import java.sql.Connection;
 import java.util.List;
 
@@ -9,6 +7,8 @@ import org.junit.Test;
 import com.agronod.keycloak.AgronodKonton;
 import com.agronod.keycloak.DatabaseAccess;
 import com.agronod.keycloak.UserInfo;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TestDatabase {
 
@@ -16,7 +16,8 @@ public class TestDatabase {
 
     @Test
     public void addition() {
-        String userId = "9a81291a-9089-4ec1-abb1-bfa843a9fa3b";
+        String userId = "e3671d30-20e8-47f9-b236-831b887f3f32";
+        String jsonKonton = "";
 
         try {
             Connection conn = databaseAccess.createDatabaseConnection(
@@ -28,9 +29,14 @@ public class TestDatabase {
 
             // Admin roles
             konton = this.databaseAccess.fetchAdminRoles(userId, conn, konton);
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(Include.NON_NULL);
+            jsonKonton = mapper.writeValueAsString(konton);
+
         } catch (Exception e) {
         }
 
-        assertEquals(userId, userId);
+        // assertEquals(userId, jsonKonton);
     }
 }
