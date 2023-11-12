@@ -96,7 +96,7 @@ public class DatabaseAccess {
             PreparedStatement st = conn.prepareStatement(
                     "select at2.id, at2.namn, ata.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') from anvandare a "
                             +
-                            "inner join agro_tenant at2 on a.agro_tenant_id  = at2.id  " +
+                            "inner join agro_tenant at2 on a.agro_tenant_id  = at2.id and at2.registrerad is true " +
                             "left outer join agro_tenant_affarspartner ata on at2.id = ata.agro_tenant_id  " +
                             "left outer join anvandare_affarspartner_roller aar on aar.anvandar_id = a.id and aar.affarspartner_id = ata.affarspartner_id "
                             +
