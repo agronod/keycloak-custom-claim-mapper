@@ -111,6 +111,10 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
                 token.getOtherClaims().put("ssn", userInfo.ssn);
             }
 
+            if (userInfo.registered != null ) {
+                token.getOtherClaims().put("registered", userInfo.registered);
+            }
+
             setClaim(token, mappingModel, userSession, keycloakSession, clientSessionCtx);
             logger.info("Set updated claims for user");
         } catch (JsonProcessingException e) {

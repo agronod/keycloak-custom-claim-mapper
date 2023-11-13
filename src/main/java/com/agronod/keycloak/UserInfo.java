@@ -10,10 +10,12 @@ public class UserInfo {
     public String email = null;
     public String name = null;
     public String ssn = null;
+    public Boolean registered = false;
 
-    public UserInfo(String email, String name, String ssn) {
+    public UserInfo(String email, String name, String ssn, Boolean registered) {
         this.email = email;
         this.name = name;
         this.ssn = ssn;
+        this.registered = registered;
     }
 }
