@@ -15,15 +15,15 @@ import org.jboss.logging.Logger;
 
 public class DatabaseAccess {
 
-    final String adminRolesQuery = "select ata.agro_tenant_id, at2.namn, aar.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') "
+    final String adminRolesQuery = "select ata.agronodkonto_id, at2.namn, aar.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') "
             +
             "from anvandare a " +
             "inner join anvandare_affarspartner_roller aar on aar.anvandar_id = a.id " +
-            "left outer join agro_tenant_affarspartner ata on ata.affarspartner_id = aar.affarspartner_id " +
-            "left outer join agro_tenant at2 on at2.id = ata.agro_tenant_id " +
-            "where a.externt_id = ? and a.agro_tenant_id != ata.agro_tenant_id and aar.roll = 'admin' " +
-            "group by ata.agro_tenant_id , at2.namn , aar.affarspartner_id, aar.anvandar_id 	" +
-            "order by ata.agro_tenant_id, aar.affarspartner_id;";
+            "left outer join agronodkonto_affarspartner ata on ata.affarspartner_id = aar.affarspartner_id " +
+            "left outer join agronodkonto at2 on at2.id = ata.agronodkonto_id " +
+            "where a.externt_id = ? and a.agronodkonto_id != ata.agronodkonto_id and aar.roll = 'admin' " +
+            "group by ata.agronodkonto_id , at2.namn , aar.affarspartner_id, aar.anvandar_id 	" +
+            "order by ata.agronodkonto_id, aar.affarspartner_id;";
 
     private static Logger logger = Logger.getLogger(DatabaseAccess.class);
 
@@ -96,8 +96,8 @@ public class DatabaseAccess {
             PreparedStatement st = conn.prepareStatement(
                     "select at2.id, at2.namn, ata.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') from anvandare a "
                             +
-                            "inner join agro_tenant at2 on a.agro_tenant_id  = at2.id and at2.registrerad is true " +
-                            "left outer join agro_tenant_affarspartner ata on at2.id = ata.agro_tenant_id  " +
+                            "inner join agronodkonto at2 on a.agronodkonto_id  = at2.id and at2.registrerad is true " +
+                            "left outer join agronodkonto_affarspartner ata on at2.id = ata.agronodkonto_id  " +
                             "left outer join anvandare_affarspartner_roller aar on aar.anvandar_id = a.id and aar.affarspartner_id = ata.affarspartner_id "
                             +
                             "where externt_id = ? " +
