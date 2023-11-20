@@ -15,20 +15,20 @@ public class TestDatabase {
     private final DatabaseAccess databaseAccess = new DatabaseAccess();
 
     @Test
-    public void addition() {
-        String userId = "e3671d30-20e8-47f9-b236-831b887f3f32";
+    public void TestConnection() {
+        String userId = "1752f7b9-c172-497c-9f8d-bdb7ef0de4a9";
         String jsonKonton = "";
+        String connectionString = "jdbc:postgresql://localhost:5432/datadelning?currentSchema=public&user=newuser&password=password";
 
         try {
-            Connection conn = databaseAccess.createDatabaseConnection(
-                    "jdbc:postgresql://localhost:5432/datadelning?currentSchema=public&user=newuser&password=password");
 
-            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(userId, conn);
+            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(connectionString,
+                    userId);
 
-            UserInfo userInfo = this.databaseAccess.fetchUserInfo(userId, conn);
+            UserInfo userInfo = this.databaseAccess.fetchUserInfo(connectionString, userId);
 
             // Admin roles
-            konton = this.databaseAccess.fetchAdminRoles(userId, conn, konton);
+            konton = this.databaseAccess.fetchAdminRoles(connectionString, userId, konton);
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(Include.NON_NULL);

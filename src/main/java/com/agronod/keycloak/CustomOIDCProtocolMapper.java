@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.sql.Connection;
 
 public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
         implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper {
@@ -74,22 +73,17 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         try {
             String userId = token.getSubject();
-            Boolean isEmailVerified = token.getEmailVerified();
             String currentScope = token.getScope();
+            String connectionString = mappingModel.getConfig().get("connectionstring");
 
-            Connection conn = this.databaseAccess
-                    .createDatabaseConnection(mappingModel.getConfig().get("connectionstring"));
-
-            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(userId, conn);
-
+            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(connectionString, userId);
             logger.info("Fetched own affarspartners");
 
-            UserInfo userInfo = this.databaseAccess.fetchUserInfo(userId, conn);
+            UserInfo userInfo = this.databaseAccess.fetchUserInfo(connectionString, userId);
             logger.info("Fetched user Info");
 
             // Admin roles
-            konton = this.databaseAccess.fetchAdminRoles(userId, conn, konton);
-
+            konton = this.databaseAccess.fetchAdminRoles(connectionString, userId, konton);
             logger.info("Fetched admin roles from other");
 
             String jsonKonton = "";
