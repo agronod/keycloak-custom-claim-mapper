@@ -21,17 +21,17 @@ public class TestDatabase {
 
         try {
             System.setProperty("DB_JDBC_URL", connectionString);
-            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(
-                    userId);
+            // List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(
+            //         userId);
 
-            UserInfo userInfo = this.databaseAccess.fetchUserInfo(userId);
+            // UserInfo userInfo = this.databaseAccess.fetchUserInfo(userId);
 
-            // Admin roles
-            konton = this.databaseAccess.fetchAdminRoles(userId, konton);
+            // // Admin roles
+            // konton = this.databaseAccess.fetchAdminRoles(userId, konton);
 
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.setSerializationInclusion(Include.NON_NULL);
-            jsonKonton = mapper.writeValueAsString(konton);
+            // ObjectMapper mapper = new ObjectMapper();
+            // mapper.setSerializationInclusion(Include.NON_NULL);
+            // jsonKonton = mapper.writeValueAsString(konton);
 
         } catch (Exception e) {
         }
