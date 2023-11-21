@@ -2,12 +2,15 @@
 
 docker rm keycloak-testing-container || true
 
+# --net=host \ is so that we can call localhost from SPI and reach localhost on computer.
+
 docker run \
+   --net=host \
    -p 8080:8080 \
    --name keycloak-testing-container \
    -e KEYCLOAK_ADMIN=admin \
    -e KEYCLOAK_ADMIN_PASSWORD=admin \
    -e JAVA_OPTS=-Dkeycloak.profile=preview \
-   -v /home/david/Git/Agronod/keycloak-custom-claim-mapper/target/custom_claim_mapper-1.0.jar:/opt/keycloak/providers/custom_claim_mapper-1.0.jar:rw \
-   -it quay.io/keycloak/keycloak:19.0.1 \
+   -v /home/david/Git/Agronod/keycloak-custom-claim-mapper/target/keycloak-custom-claim-mapper-jar-with-dependencies.jar:/opt/keycloak/providers/keycloak-custom-claim-mapper-jar-with-dependencies.jar:rw \
+   -it quay.io/keycloak/keycloak:18.0.0 \
    start-dev
