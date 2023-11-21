@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -78,27 +79,29 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
     public AccessToken transformAccessToken(AccessToken token, ProtocolMapperModel mappingModel,
             KeycloakSession keycloakSession,
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
+
+        String connectionString = mappingModel.getConfig().get("connectionstring");
+        String maxPoolSize = mappingModel.getConfig().get("maxPoolSize");
         try {
-            String userId = token.getSubject();
-            String currentScope = token.getScope();
-            String connectionString = mappingModel.getConfig().get("connectionstring");
-            String maxPoolSize = mappingModel.getConfig().get("maxPoolSize");
-            // Set the connection string as environment parameter so the static DataSource can read it.
-            System.setProperty("DB_JDBC_URL", connectionString);
-            System.setProperty("DB_JDBC_POOL_SIZE", maxPoolSize);
             // Set correct driver
             Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+        }
 
-            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners( userId);
+        try (Connection conn = DataSource.getConnection(connectionString, Integer.parseInt(maxPoolSize))) {
+            String userId = token.getSubject();
+            String currentScope = token.getScope();
+
+            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(conn,
+                    userId);
             logger.info("Fetched own affarspartners");
 
-            UserInfo userInfo = this.databaseAccess.fetchUserInfo( userId);
+            UserInfo userInfo = this.databaseAccess.fetchUserInfo(conn, userId);
             logger.info("Fetched user Info");
 
             // Admin roles
-            konton = this.databaseAccess.fetchAdminRoles( userId, konton);
+            konton = this.databaseAccess.fetchAdminRoles(conn, userId, konton);
             logger.info("Fetched admin roles from other");
-
             String jsonKonton = "";
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(Include.NON_NULL);
@@ -118,12 +121,13 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
                 token.getOtherClaims().put("ssn", userInfo.ssn);
             }
 
-            if (userInfo.registered != null ) {
+            if (userInfo.registered != null) {
                 token.getOtherClaims().put("registered", userInfo.registered);
             }
 
             setClaim(token, mappingModel, userSession, keycloakSession, clientSessionCtx);
             logger.info("Set updated claims for user");
+
         } catch (JsonProcessingException e) {
             logger.error("transformAccessToken - failed to serialize to json", e, null, e);
         } catch (Exception e) {

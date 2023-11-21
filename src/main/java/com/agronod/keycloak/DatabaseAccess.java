@@ -25,10 +25,10 @@ public class DatabaseAccess {
 
     private static Logger logger = Logger.getLogger(DatabaseAccess.class);
 
-    public List<AgronodKonton> fetchAdminRoles( String userId, List<AgronodKonton> konton) {
+    public List<AgronodKonton> fetchAdminRoles(Connection conn, String userId, List<AgronodKonton> konton) {
         AgronodKonton konto;
 
-        try (Connection conn = DataSource.getConnection()) {
+        try {
 
             PreparedStatement st3 = conn.prepareStatement(adminRolesQuery);
             st3.setString(1, userId);
@@ -78,13 +78,13 @@ public class DatabaseAccess {
         return konton;
     }
 
-    public List<AgronodKonton> fetchOwnAgroKontoWithAffarspartners( String userId) {
+    public List<AgronodKonton> fetchOwnAgroKontoWithAffarspartners(Connection conn, String userId) {
 
         List<AgronodKonton> konton = new ArrayList<AgronodKonton>();
         List<Affarspartners> affarspartners = new ArrayList<Affarspartners>();
         AgronodKonton konto;
 
-        try (Connection conn = DataSource.getConnection()) {
+        try {
             PreparedStatement st = conn.prepareStatement(
                     "select at2.id, at2.namn, ata.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') from anvandare a "
                             +
@@ -127,13 +127,13 @@ public class DatabaseAccess {
         return konton;
     }
 
-    public UserInfo fetchUserInfo( String userId) {
+    public UserInfo fetchUserInfo(Connection conn, String userId) {
         String email = null;
         String name = null;
         String ssn = null;
         boolean registrerad = false;
 
-        try (Connection conn = DataSource.getConnection()) {
+        try {
             PreparedStatement st2 = conn.prepareStatement(
                     "select namn, personnummer, epost, registrerad from anvandare where externt_id = ?");
             st2.setString(1, userId);
