@@ -2,16 +2,12 @@ package com.agronod.keycloak;
 
 import java.sql.Array;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Properties;
 
 import org.jboss.logging.Logger;
 
@@ -29,42 +25,11 @@ public class DatabaseAccess {
 
     private static Logger logger = Logger.getLogger(DatabaseAccess.class);
 
-    private static Connection _conn = null;
-    private static int _retries = 0;
-
-    @Override
-    protected void finalize() {
-        try {
-            _conn.close();
-            logger.info("transformAccessToken - closing connection");
-        } catch (SQLException e) {
-            logger.warn("transformAccessToken - failed closing connection to database", e, null, e);
-        }
-    }
-
-    public Connection initializeConnection(String connectionString) {
-        try {
-            if (_conn == null || _conn.isClosed()) {
-                Class.forName("org.postgresql.Driver");
-                Properties props = new Properties();
-                props.setProperty("idle_in_transaction_session_timeout", "15000");
-                _conn = DriverManager.getConnection(connectionString, props);
-                _retries = 0;
-            }
-        } catch (SQLTimeoutException | org.postgresql.util.PSQLException e) {
-            logger.info("transformAccessToken - timeout to connect to database", e, null, e);
-        } catch (SQLException e) {
-            logger.info("transformAccessToken - SQL exception to connect to database", e, null, e);
-        } catch (ClassNotFoundException e) {
-            logger.error("transformAccessToken - failed to connect to database", e, null, e);
-        }
-        return _conn;
-    }
-
-    public List<AgronodKonton> fetchAdminRoles(String connectionString, String userId, List<AgronodKonton> konton) {
+    public List<AgronodKonton> fetchAdminRoles( String userId, List<AgronodKonton> konton) {
         AgronodKonton konto;
-        try {
-            Connection conn = this.initializeConnection(connectionString);
+
+        try (Connection conn = DataSource.getConnection()) {
+
             PreparedStatement st3 = conn.prepareStatement(adminRolesQuery);
             st3.setString(1, userId);
             ResultSet rs3 = st3.executeQuery();
@@ -107,34 +72,19 @@ public class DatabaseAccess {
 
             rs3.close();
             st3.close();
-        } catch (SQLException e) {
-            if (_retries < 3) {
-                if (_conn != null) {
-                    try {
-                        _conn.close();
-                    } catch (SQLException e1) {
-                        _conn = null;
-                    }
-                }
-                _retries++;
-                return this.fetchAdminRoles(connectionString, userId, konton);
-            } else {
-                logger.error("SQLError fetching admin roles for userId:" + userId, e);
-            }
         } catch (Exception e) {
             logger.error("Error fetching admin roles for userId:" + userId, e);
         }
         return konton;
     }
 
-    public List<AgronodKonton> fetchOwnAgroKontoWithAffarspartners(String connectionString, String userId) {
+    public List<AgronodKonton> fetchOwnAgroKontoWithAffarspartners( String userId) {
 
         List<AgronodKonton> konton = new ArrayList<AgronodKonton>();
         List<Affarspartners> affarspartners = new ArrayList<Affarspartners>();
         AgronodKonton konto;
 
-        try {
-            Connection conn = this.initializeConnection(connectionString);
+        try (Connection conn = DataSource.getConnection()) {
             PreparedStatement st = conn.prepareStatement(
                     "select at2.id, at2.namn, ata.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') from anvandare a "
                             +
@@ -171,34 +121,19 @@ public class DatabaseAccess {
 
             rs.close();
             st.close();
-        } catch (SQLException e) {
-            if (_retries < 3) {
-                if (_conn != null) {
-                    try {
-                        _conn.close();
-                    } catch (SQLException e1) {
-                        _conn = null;
-                    }
-                }
-                _retries++;
-                return this.fetchOwnAgroKontoWithAffarspartners(connectionString, userId);
-            } else {
-                logger.error("SQLError fetching admin roles for userId:" + userId, e);
-            }
         } catch (Exception e) {
             logger.error("Error fetching own affarspartners for userId:" + userId, e);
         }
         return konton;
     }
 
-    public UserInfo fetchUserInfo(String connectionString, String userId) {
+    public UserInfo fetchUserInfo( String userId) {
         String email = null;
         String name = null;
         String ssn = null;
         boolean registrerad = false;
 
-        try {
-            Connection conn = this.initializeConnection(connectionString);
+        try (Connection conn = DataSource.getConnection()) {
             PreparedStatement st2 = conn.prepareStatement(
                     "select namn, personnummer, epost, registrerad from anvandare where externt_id = ?");
             st2.setString(1, userId);
@@ -213,20 +148,6 @@ public class DatabaseAccess {
 
             rs2.close();
             st2.close();
-        } catch (SQLException e) {
-            if (_retries < 3) {
-                if (_conn != null) {
-                    try {
-                        _conn.close();
-                    } catch (SQLException e1) {
-                        _conn = null;
-                    }
-                }
-                _retries++;
-                return this.fetchUserInfo(connectionString, userId);
-            } else {
-                logger.error("SQLError fetching admin roles for userId:" + userId, e);
-            }
         } catch (Exception e) {
             logger.error("Error fetching own user info for userId:" + userId, e);
         }

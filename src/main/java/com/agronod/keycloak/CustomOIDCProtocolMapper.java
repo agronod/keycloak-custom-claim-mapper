@@ -37,6 +37,13 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
         property.setHelpText("Connectionstring to database");
         property.setType(ProviderConfigProperty.STRING_TYPE);
         configProperties.add(property);
+        property = new ProviderConfigProperty();
+        property.setName("maxPoolSize");
+        property.setLabel("Max db connection pool size");
+        property.setHelpText("Max db connection pool size");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setDefaultValue("2");
+        configProperties.add(property);
     }
 
     public CustomOIDCProtocolMapper() {
@@ -75,15 +82,21 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             String userId = token.getSubject();
             String currentScope = token.getScope();
             String connectionString = mappingModel.getConfig().get("connectionstring");
+            String maxPoolSize = mappingModel.getConfig().get("maxPoolSize");
+            // Set the connection string as environment parameter so the static DataSource can read it.
+            System.setProperty("DB_JDBC_URL", connectionString);
+            System.setProperty("DB_JDBC_POOL_SIZE", maxPoolSize);
+            // Set correct driver
+            Class.forName("org.postgresql.Driver");
 
-            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(connectionString, userId);
+            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners( userId);
             logger.info("Fetched own affarspartners");
 
-            UserInfo userInfo = this.databaseAccess.fetchUserInfo(connectionString, userId);
+            UserInfo userInfo = this.databaseAccess.fetchUserInfo( userId);
             logger.info("Fetched user Info");
 
             // Admin roles
-            konton = this.databaseAccess.fetchAdminRoles(connectionString, userId, konton);
+            konton = this.databaseAccess.fetchAdminRoles( userId, konton);
             logger.info("Fetched admin roles from other");
 
             String jsonKonton = "";

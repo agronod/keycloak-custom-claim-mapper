@@ -1,5 +1,4 @@
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.junit.Test;
@@ -21,14 +20,14 @@ public class TestDatabase {
         String connectionString = "jdbc:postgresql://localhost:5432/datadelning?currentSchema=public&user=newuser&password=password";
 
         try {
-
-            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(connectionString,
+            System.setProperty("DB_JDBC_URL", connectionString);
+            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(
                     userId);
 
-            UserInfo userInfo = this.databaseAccess.fetchUserInfo(connectionString, userId);
+            UserInfo userInfo = this.databaseAccess.fetchUserInfo(userId);
 
             // Admin roles
-            konton = this.databaseAccess.fetchAdminRoles(connectionString, userId, konton);
+            konton = this.databaseAccess.fetchAdminRoles(userId, konton);
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(Include.NON_NULL);
