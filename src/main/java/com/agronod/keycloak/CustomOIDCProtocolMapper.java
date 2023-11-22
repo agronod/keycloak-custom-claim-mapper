@@ -36,7 +36,7 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
         property.setName("connectionstring");
         property.setLabel("Database connectionstring");
         property.setHelpText("Connectionstring to database");
-        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setType(ProviderConfigProperty.PASSWORD);
         configProperties.add(property);
         property = new ProviderConfigProperty();
         property.setName("maxPoolSize");
@@ -94,14 +94,14 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
 
             List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(conn,
                     userId);
-            logger.info("Fetched own affarspartners");
+            logger.info("Fetched " + konton.size() + " own affarspartners");
 
             UserInfo userInfo = this.databaseAccess.fetchUserInfo(conn, userId);
-            logger.info("Fetched user Info");
+            logger.info("Fetched user Info id:" + userInfo.Id);
 
             // Admin roles
             konton = this.databaseAccess.fetchAdminRoles(conn, userId, konton);
-            logger.info("Fetched admin roles from other");
+            logger.info("Fetched " + konton.size() + " admin roles from other");
             String jsonKonton = "";
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(Include.NON_NULL);
