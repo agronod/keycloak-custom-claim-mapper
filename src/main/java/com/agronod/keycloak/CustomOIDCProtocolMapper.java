@@ -117,9 +117,10 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             if (userInfo.name != null && userInfo.name.length() > 0) {
                 logger.info("set name from db");
                 token.getOtherClaims().put("name", userInfo.name);
-            }else {
-                logger.info("set name from keycloak first and last name");                
-                token.getOtherClaims().put("name", token.getGivenName() + " " + token.getFamilyName());                
+            } else {
+                logger.info("set name from keycloak first and last name");
+                token.getOtherClaims().put("name",
+                        userSession.getUser().getFirstName() + " " + userSession.getUser().getLastName());
             }
 
             if (currentScope.contains("ssn") && userInfo.ssn != null && userInfo.ssn.length() > 0) {
