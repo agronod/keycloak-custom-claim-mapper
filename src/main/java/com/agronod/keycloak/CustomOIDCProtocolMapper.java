@@ -97,7 +97,7 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             logger.info("Fetched " + konton.size() + " own affarspartners");
 
             UserInfo userInfo = this.databaseAccess.fetchUserInfo(conn, userId);
-            logger.info("Fetched user Info id:" + userInfo.Id);
+            logger.info("Fetched user Info name: " + userInfo.name);
 
             // Admin roles
             konton = this.databaseAccess.fetchAdminRoles(conn, userId, konton);
@@ -110,23 +110,27 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             token.getOtherClaims().put("agronodKonton", jsonKonton);
 
             if (userInfo.email != null && userInfo.email.length() > 0) {
+                logger.info("set email from db");
                 token.getOtherClaims().put("email", userInfo.email);
             }
 
             if (userInfo.name != null && userInfo.name.length() > 0) {
+                logger.info("set name from db");
                 token.getOtherClaims().put("name", userInfo.name);
             }
 
             if (currentScope.contains("ssn") && userInfo.ssn != null && userInfo.ssn.length() > 0) {
+                logger.info("set ssn from db");
                 token.getOtherClaims().put("ssn", userInfo.ssn);
             }
 
             if (userInfo.registered != null) {
+                logger.info("set registered from db");
                 token.getOtherClaims().put("registered", userInfo.registered);
             }
 
             setClaim(token, mappingModel, userSession, keycloakSession, clientSessionCtx);
-            logger.info("Set updated claims for user");
+            logger.info("Claims updated!");
 
         } catch (JsonProcessingException e) {
             logger.error("transformAccessToken - failed to serialize to json", e, null, e);
