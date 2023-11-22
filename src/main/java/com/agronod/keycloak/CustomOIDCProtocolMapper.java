@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +36,7 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
         property.setName("connectionstring");
         property.setLabel("Database connectionstring");
         property.setHelpText("Connectionstring to database");
-        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setType(ProviderConfigProperty.PASSWORD);
         configProperties.add(property);
         property = new ProviderConfigProperty();
         property.setName("maxPoolSize");
@@ -78,27 +79,29 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
     public AccessToken transformAccessToken(AccessToken token, ProtocolMapperModel mappingModel,
             KeycloakSession keycloakSession,
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
+
+        String connectionString = mappingModel.getConfig().get("connectionstring");
+        String maxPoolSize = mappingModel.getConfig().get("maxPoolSize");
         try {
-            String userId = token.getSubject();
-            String currentScope = token.getScope();
-            String connectionString = mappingModel.getConfig().get("connectionstring");
-            String maxPoolSize = mappingModel.getConfig().get("maxPoolSize");
-            // Set the connection string as environment parameter so the static DataSource can read it.
-            System.setProperty("DB_JDBC_URL", connectionString);
-            System.setProperty("DB_JDBC_POOL_SIZE", maxPoolSize);
             // Set correct driver
             Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+        }
 
-            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners( userId);
-            logger.info("Fetched own affarspartners");
+        try (Connection conn = DataSource.getConnection(connectionString, Integer.parseInt(maxPoolSize))) {
+            String userId = token.getSubject();
+            String currentScope = token.getScope();
 
-            UserInfo userInfo = this.databaseAccess.fetchUserInfo( userId);
-            logger.info("Fetched user Info");
+            List<AgronodKonton> konton = this.databaseAccess.fetchOwnAgroKontoWithAffarspartners(conn,
+                    userId);
+            logger.info("Fetched " + konton.size() + " own affarspartners");
+
+            UserInfo userInfo = this.databaseAccess.fetchUserInfo(conn, userId);
+            logger.info("Fetched user Info name: " + userInfo.name);
 
             // Admin roles
-            konton = this.databaseAccess.fetchAdminRoles( userId, konton);
-            logger.info("Fetched admin roles from other");
-
+            konton = this.databaseAccess.fetchAdminRoles(conn, userId, konton);
+            logger.info("Fetched " + konton.size() + " admin roles from other");
             String jsonKonton = "";
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(Include.NON_NULL);
@@ -107,23 +110,28 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             token.getOtherClaims().put("agronodKonton", jsonKonton);
 
             if (userInfo.email != null && userInfo.email.length() > 0) {
+                logger.info("set email from db");
                 token.getOtherClaims().put("email", userInfo.email);
             }
 
             if (userInfo.name != null && userInfo.name.length() > 0) {
+                logger.info("set name from db");
                 token.getOtherClaims().put("name", userInfo.name);
             }
 
             if (currentScope.contains("ssn") && userInfo.ssn != null && userInfo.ssn.length() > 0) {
+                logger.info("set ssn from db");
                 token.getOtherClaims().put("ssn", userInfo.ssn);
             }
 
-            if (userInfo.registered != null ) {
+            if (userInfo.registered != null) {
+                logger.info("set registered from db");
                 token.getOtherClaims().put("registered", userInfo.registered);
             }
 
             setClaim(token, mappingModel, userSession, keycloakSession, clientSessionCtx);
-            logger.info("Set updated claims for user");
+            logger.info("Claims updated!");
+
         } catch (JsonProcessingException e) {
             logger.error("transformAccessToken - failed to serialize to json", e, null, e);
         } catch (Exception e) {
