@@ -131,11 +131,12 @@ public class DatabaseAccess {
         String email = null;
         String name = null;
         String ssn = null;
+        String id = null;
         boolean registrerad = false;
 
         try {
             PreparedStatement st2 = conn.prepareStatement(
-                    "select namn, personnummer, epost, registrerad from anvandare where externt_id = ?");
+                    "select namn, personnummer, epost, registrerad, id from anvandare where externt_id = ?");
             st2.setString(1, userId);
             ResultSet rs2 = st2.executeQuery();
 
@@ -144,6 +145,7 @@ public class DatabaseAccess {
                 ssn = rs2.getString(2);
                 email = rs2.getString(3);
                 registrerad = rs2.getBoolean(4);
+                id = rs2.getString(5);
             }
 
             rs2.close();
@@ -151,7 +153,7 @@ public class DatabaseAccess {
         } catch (Exception e) {
             logger.error("Error fetching own user info for userId:" + userId, e);
         }
-        return new UserInfo(email, name, ssn, registrerad);
+        return new UserInfo(email, name, ssn, registrerad, id);
     }
 
     private AgronodKonton findKonto(String kontoId, List<AgronodKonton> agroKonton) {

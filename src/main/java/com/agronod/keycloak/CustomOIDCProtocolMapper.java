@@ -97,7 +97,13 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             logger.info("Fetched " + konton.size() + " own affarspartners");
 
             UserInfo userInfo = this.databaseAccess.fetchUserInfo(conn, userId);
-            logger.info("Fetched user Info name: " + userInfo.name);
+            if (userInfo.Id == null) {
+                // If empty, try fetching with brokerId, stored in username
+                String brokerId = userSession.getUser().getUsername();
+                userInfo = this.databaseAccess.fetchUserInfo(conn, brokerId);
+                logger.info("Fetched anvandare by brokerId: " + brokerId);
+            }
+            logger.info("Fetched anvandareId: " + userInfo.Id);
 
             // Admin roles
             konton = this.databaseAccess.fetchAdminRoles(conn, userId, konton);
