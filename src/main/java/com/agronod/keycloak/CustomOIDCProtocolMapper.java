@@ -97,7 +97,13 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             logger.info("Fetched " + konton.size() + " own affarspartners");
 
             UserInfo userInfo = this.databaseAccess.fetchUserInfo(conn, userId);
-            logger.info("Fetched user Info name: " + userInfo.name);
+            if (userInfo.Id == null) {
+                // If empty, try fetching with brokerId, stored in username
+                String brokerId = userSession.getUser().getUsername();
+                userInfo = this.databaseAccess.fetchUserInfo(conn, brokerId);
+                logger.info("Fetched anvandare by brokerId: " + brokerId);
+            }
+            logger.info("Fetched anvandareId: " + userInfo.Id);
 
             // Admin roles
             konton = this.databaseAccess.fetchAdminRoles(conn, userId, konton);
@@ -117,9 +123,10 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             if (userInfo.name != null && userInfo.name.length() > 0) {
                 logger.info("set name from db");
                 token.getOtherClaims().put("name", userInfo.name);
-            }else {
-                logger.info("set name from keycloak first and last name");                
-                token.getOtherClaims().put("name", token.getGivenName() + " " + token.getFamilyName());                
+            } else {
+                logger.info("set name from keycloak first and last name");
+                token.getOtherClaims().put("name",
+                        userSession.getUser().getFirstName() + " " + userSession.getUser().getLastName());
             }
 
             if (currentScope.contains("ssn") && userInfo.ssn != null && userInfo.ssn.length() > 0) {

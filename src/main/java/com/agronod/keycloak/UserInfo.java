@@ -12,10 +12,11 @@ public class UserInfo {
     public String ssn = null;
     public Boolean registered = false;
 
-    public UserInfo(String email, String name, String ssn, Boolean registered) {
+    public UserInfo(String email, String name, String ssn, Boolean registered, String id) {
         this.email = email;
         this.name = name;
         this.ssn = ssn;
         this.registered = registered;
+        this.Id = id;
     }
 }
