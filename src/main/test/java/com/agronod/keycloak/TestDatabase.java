@@ -2,7 +2,7 @@
 import java.sql.Connection;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.agronod.keycloak.AgronodKonton;
 import com.agronod.keycloak.DataSource;
