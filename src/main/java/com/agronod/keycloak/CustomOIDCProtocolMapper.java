@@ -108,11 +108,18 @@ public class CustomOIDCProtocolMapper extends AbstractOIDCProtocolMapper
             // Admin roles
             konton = this.databaseAccess.fetchAdminRoles(conn, userId, konton);
             logger.info("Fetched " + konton.size() + " admin roles from other");
+
+            // Agronodkonto roles
+            konton = this.databaseAccess.fetchAgronodKontoRolesAndAddToKontoList(conn, userId, konton);
+            logger.info("Fetched " + konton.size() + " agronodkonto roles");
+
+            // Convert konton to json
             String jsonKonton = "";
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(Include.NON_NULL);
-
             jsonKonton = mapper.writeValueAsString(konton);
+
+            // Set konton as claim
             token.getOtherClaims().put("agronodKonton", jsonKonton);
 
             if (userInfo.email != null && userInfo.email.length() > 0) {

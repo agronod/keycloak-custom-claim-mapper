@@ -156,6 +156,70 @@ public class DatabaseAccess {
         return new UserInfo(email, name, ssn, registrerad, id);
     }
 
+    public List<AgronodKonton> fetchAgronodKontoRolesAndAddToKontoList(Connection conn, String userId, List<AgronodKonton> konton) {
+        AgronodKonton konto;
+
+        try {
+
+            String agronodkontoRolesQuery = "select aa.agronodkonto_id, at2.namn, aa.affarspartner_id, coalesce(array_agg( aar.roll)FILTER (WHERE aar.roll IS NOT NULL),'{}') " +
+                        "from anvandare a " +
+                        "inner join anvandare_agronodkonto_roller aar on aar.anvandar_id = a.id " +
+                        "left outer join agronodkonto at2 on at2.id = aar.agronodkonto_id " +
+                        "left outer join agronodkonto_affarspartner aa on aa.agronodkonto_id = aar.agronodkonto_id " +
+                        "where  " +
+                        "a.externt_id = ? " +
+                        "and a.agronodkonto_id != aa.agronodkonto_id " +
+                        "group by a.externt_id, aa.agronodkonto_id , at2.namn , aa.affarspartner_id, aar.anvandar_id  " +
+                        "order by aa.agronodkonto_id, aa.affarspartner_id;";
+
+            PreparedStatement st3 = conn.prepareStatement(agronodkontoRolesQuery);
+            st3.setString(1, userId);
+            ResultSet rs3 = st3.executeQuery();
+
+            while (rs3.next()) {
+
+                String agroTenantId = rs3.getString(1);
+                String agroTenantName = rs3.getString(2);
+                String affarspartnerId = rs3.getString(3);
+                Array dbRoles = rs3.getArray(4);
+
+                List<String> roles = dbRoles != null ? Arrays.asList((String[]) dbRoles.getArray())
+                        : new ArrayList<String>();
+
+                AgronodKonton existingKonto = findKonto(agroTenantId, konton);
+                if (existingKonto != null) {
+                    // AgronodKonto finns
+                    Affarspartners existingAffPartner = findAffarspartner(affarspartnerId,
+                            existingKonto.Affarspartners);
+                    Affarspartners ap = new Affarspartners(affarspartnerId, roles);
+
+                    if (existingAffPartner != null) {
+                        // Affarspartner finns
+                    } else {
+                        if (existingKonto.Affarspartners == null) {
+                            existingKonto.Affarspartners = new ArrayList<Affarspartners>();
+                        }
+                        existingKonto.Affarspartners.add(ap);
+                    }
+                } else {
+                    konto = new AgronodKonton(agroTenantId, agroTenantName);
+                    if (affarspartnerId != null) {
+                        Affarspartners ap = new Affarspartners(affarspartnerId, roles);
+                        konto.Affarspartners = new ArrayList<Affarspartners>();
+                        konto.Affarspartners.add(ap);
+                    }
+                    konton.add(konto);
+                }
+            }
+
+            rs3.close();
+            st3.close();
+        } catch (Exception e) {
+            logger.error("Error fetching admin roles for userId:" + userId, e);
+        }
+        return konton;
+    }
+
     private AgronodKonton findKonto(String kontoId, List<AgronodKonton> agroKonton) {
         Iterator<AgronodKonton> iterator = agroKonton.iterator();
         while (iterator.hasNext()) {
