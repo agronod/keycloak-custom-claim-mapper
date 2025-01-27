@@ -19,7 +19,7 @@ public class DatabaseAccess {
             "inner join anvandare_affarspartner_roller aar on aar.anvandar_id = a.id " +
             "left outer join agronodkonto_affarspartner ata on ata.affarspartner_id = aar.affarspartner_id " +
             "left outer join agronodkonto at2 on at2.id = ata.agronodkonto_id " +
-            "where a.externt_id = ? and a.agronodkonto_id != ata.agronodkonto_id and aar.roll = 'admin' " +
+            "where a.externt_id = ? and a.agronodkonto_id != ata.agronodkonto_id and aar.roll in ('admin','support') " +
             "group by ata.agronodkonto_id , at2.namn , aar.affarspartner_id, aar.anvandar_id 	" +
             "order by ata.agronodkonto_id, aar.affarspartner_id;";
 
