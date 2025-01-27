@@ -36,7 +36,7 @@ jobs:
       - name: Build with Maven dev
         if: ${{ github.ref == 'refs/heads/develop' }}
         run: mvn -Pdev -B package --file pom.xml
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: keycloak-custom-claim-mapper-jar-with-dependencies
           path: target/keycloak-custom-claim-mapper-jar-with-dependencies.jar
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
       - run: mkdir jars
                 
       - run: mv /home/runner/work/keycloak-custom-claim-mapper/keycloak-custom-claim-mapper/keycloak-custom-claim-mapper-jar-with-dependencies/keycloak-custom-claim-mapper-jar-with-dependencies.jar jars/keycloak-custom-claim-mapper-jar-with-dependencies.jar
