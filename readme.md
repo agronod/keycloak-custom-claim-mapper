@@ -1,7 +1,7 @@
 # Agronod Keycloak Custom Claim Mapper
 
 Requires 
-    - OpenJDK 17 or higher
+    - OpenJDK 21 or higher
     - maven
 
 ## build
